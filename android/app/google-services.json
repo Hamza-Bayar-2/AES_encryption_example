@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "363196376576",
+    "project_id": "aes-encryption-b69f4",
+    "storage_bucket": "aes-encryption-b69f4.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:363196376576:android:84dfb3cc649e4414d59ae5",
+        "android_client_info": {
+          "package_name": "com.example.lab2_app_2"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDDBeRsKM7bTE_iVRqIgGkCGkAm17KJhKg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
