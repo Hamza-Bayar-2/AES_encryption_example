@@ -17,6 +17,8 @@ class MyHomePage extends StatefulWidget {
 class _MyHomePageState extends State<MyHomePage> {
   enc.Key key = enc.Key.fromSecureRandom(32);
   enc.IV iv = enc.IV.fromSecureRandom(16);
+  final List<bool> _selectedNumber = [false, false, true];
+  final List<Text> numbers = const [Text("128"), Text("192"), Text("256")];
 
   @override
   Widget build(BuildContext context) {
@@ -25,82 +27,53 @@ class _MyHomePageState extends State<MyHomePage> {
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
         title: Text(widget.title),
       ),
-      body: Center(
+      body: Padding(
+        padding: const EdgeInsets.all(8.0),
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.max,
           children: [
-            TextButton.icon(
-              onPressed: () async {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => const ImagePage(fileName: "decryptedFoto.jpg",)),
-                );
+            button(Icons.image, "Show Decrypted Image", () async {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                    builder: (context) =>
+                        const ImagePage(fileName: "decryptedFoto.jpg")),
+              );
+            }),
+            button(Icons.file_copy, "Show Encrypted file", () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                    builder: (context) => const EncryptedFilePage(
+                        fileName: "encryptedBytes.enc")),
+              );
+            }),
+            button(Icons.delete, "Delete Files", () async {
+              await deleteFile("decryptedFoto.jpg");
+              await deleteFile("encryptedBytes.enc");
+            }),
+            button(Icons.camera_alt, "Open Camera", () {}),
+            ToggleButtons(
+              onPressed: (int index) {
+                setState(() {
+                  // The button that is tapped is set to true, and the others to false.
+                  for (int i = 0; i < _selectedNumber.length; i++) {
+                    _selectedNumber[i] = i == index;
+                  }
+                });
               },
-              style: TextButton.styleFrom(
-                shape: const RoundedRectangleBorder(
-                  borderRadius: BorderRadius.all(Radius.circular(8)),
-                  side: BorderSide(
-                    color: Colors.deepPurple,
-                    width: 2,
-                  ),
-                ),
+              borderRadius: const BorderRadius.all(Radius.circular(8)),
+              selectedBorderColor: Colors.deepPurple,
+              selectedColor: Colors.white,
+              fillColor: Colors.deepPurple,
+              color: Colors.deepPurple,
+              constraints: const BoxConstraints(
+                minHeight: 40.0,
+                minWidth: 80.0,
               ),
-              icon: const Icon(Icons.image),
-              label: const Text("Show Decrypted Image"),
-            ),
-            TextButton.icon(
-              onPressed: () async {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => const EncryptedFilePage(fileName: "encryptedBytes.enc",)),
-                );
-              },
-              style: TextButton.styleFrom(
-                shape: const RoundedRectangleBorder(
-                  borderRadius: BorderRadius.all(Radius.circular(8)),
-                  side: BorderSide(
-                    color: Colors.deepPurple,
-                    width: 2,
-                  ),
-                ),
-              ),
-              icon: const Icon(Icons.file_copy),
-              label: const Text("Show Encrypted file"),
-            ),
-            TextButton.icon(
-              onPressed: () async {
-                await deleteFile("decryptedFoto.jpg");
-                await deleteFile("encryptedBytes.enc");
-              },
-              style: TextButton.styleFrom(
-                shape: const RoundedRectangleBorder(
-                  borderRadius: BorderRadius.all(Radius.circular(8)),
-                  side: BorderSide(
-                    color: Colors.deepPurple,
-                    width: 2,
-                  ),
-                ),
-              ),
-              icon: const Icon(Icons.delete),
-              label: const Text("Delete Files"),
-            ),
-            TextButton.icon(
-              onPressed: () async {
-                // Navigator.push(
-                //   context,
-                //   MaterialPageRoute(builder: (context) => const Qr()),
-                // );
-              },
-              style: TextButton.styleFrom(
-                shape: const RoundedRectangleBorder(
-                  borderRadius: BorderRadius.all(Radius.circular(8)),
-                  side: BorderSide(
-                    color: Colors.deepPurple,
-                    width: 2,
-                  ),
-                ),
-              ),
-              icon: const Icon(Icons.camera_alt),
-              label: const Text("Open Camera"),
+              isSelected: _selectedNumber,
+              children: numbers,
             ),
           ],
         ),
@@ -139,6 +112,25 @@ class _MyHomePageState extends State<MyHomePage> {
           }
         },
       ),
+    );
+  }
+
+  TextButton button(IconData icon, String text, Function() function) {
+    return TextButton.icon(
+      onPressed: () async {
+        function();
+      },
+      style: TextButton.styleFrom(
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.all(Radius.circular(8)),
+          side: BorderSide(
+            color: Colors.deepPurple,
+            width: 2,
+          ),
+        ),
+      ),
+      icon: Icon(icon),
+      label: Text(text),
     );
   }
 
