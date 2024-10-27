@@ -2,11 +2,10 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:encrypt/encrypt.dart' as enc;
 import 'package:flutter/services.dart';
+import 'package:lab2_app_2/pages/encrypted_file_page.dart';
 import 'package:lab2_app_2/pages/image_page.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as p;
-// ignore: avoid_web_libraries_in_flutter
-// import 'dart:html' as html;
 
 class MyHomePage extends StatefulWidget {
   const MyHomePage({super.key, required this.title});
@@ -27,14 +26,13 @@ class _MyHomePageState extends State<MyHomePage> {
         title: Text(widget.title),
       ),
       body: Center(
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        child: Column(
           children: [
             TextButton.icon(
               onPressed: () async {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (context) => const ImagePage()),
+                  MaterialPageRoute(builder: (context) => const ImagePage(fileName: "decryptedFoto.jpg",)),
                 );
               },
               style: TextButton.styleFrom(
@@ -48,6 +46,25 @@ class _MyHomePageState extends State<MyHomePage> {
               ),
               icon: const Icon(Icons.image),
               label: const Text("Show Decrypted Image"),
+            ),
+            TextButton.icon(
+              onPressed: () async {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const EncryptedFilePage(fileName: "encryptedBytes.enc",)),
+                );
+              },
+              style: TextButton.styleFrom(
+                shape: const RoundedRectangleBorder(
+                  borderRadius: BorderRadius.all(Radius.circular(8)),
+                  side: BorderSide(
+                    color: Colors.deepPurple,
+                    width: 2,
+                  ),
+                ),
+              ),
+              icon: const Icon(Icons.file_copy),
+              label: const Text("Show Encrypted file"),
             ),
             TextButton.icon(
               onPressed: () async {
@@ -66,6 +83,25 @@ class _MyHomePageState extends State<MyHomePage> {
               icon: const Icon(Icons.delete),
               label: const Text("Delete Files"),
             ),
+            TextButton.icon(
+              onPressed: () async {
+                // Navigator.push(
+                //   context,
+                //   MaterialPageRoute(builder: (context) => const Qr()),
+                // );
+              },
+              style: TextButton.styleFrom(
+                shape: const RoundedRectangleBorder(
+                  borderRadius: BorderRadius.all(Radius.circular(8)),
+                  side: BorderSide(
+                    color: Colors.deepPurple,
+                    width: 2,
+                  ),
+                ),
+              ),
+              icon: const Icon(Icons.camera_alt),
+              label: const Text("Open Camera"),
+            ),
           ],
         ),
       ),
@@ -81,6 +117,7 @@ class _MyHomePageState extends State<MyHomePage> {
           ),
         ],
         onTap: (value) async {
+          print(key.bytes);
           if (value == 0) {
             Uint8List fileBytes =
                 await loadFileAsBytes("assets/images/Atomium.jpg");
@@ -132,7 +169,7 @@ class _MyHomePageState extends State<MyHomePage> {
     final file = File(filePath);
 
     await file.writeAsBytes(fileAsBytes);
-    print('Şifrelenmiş file kaydedildi: $filePath');
+    print('File saved: $filePath');
   }
 
   Future<void> deleteFile(String fileName) async {

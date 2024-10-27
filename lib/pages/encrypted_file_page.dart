@@ -3,21 +3,21 @@ import 'package:flutter/material.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 
-class ImagePage extends StatefulWidget {
+class EncryptedFilePage extends StatefulWidget {
   final String fileName;
 
-  const ImagePage({super.key, required this.fileName});
+  const EncryptedFilePage({super.key, required this.fileName});
 
   @override
-  State<ImagePage> createState() => _ImagePageState(fileName: fileName);
+  State<EncryptedFilePage> createState() => _EncryptedFilePageState(fileName: fileName);
 }
 
-class _ImagePageState extends State<ImagePage> {
+class _EncryptedFilePageState extends State<EncryptedFilePage> {
   final String fileName;
 
-  _ImagePageState({required this.fileName});
+  _EncryptedFilePageState({required this.fileName});
 
-  Future<File?> loadImage(String fileName) async {
+  Future<File?> loadFile(String fileName) async {
     final directory = await getApplicationDocumentsDirectory();
     var filePath = p.join(directory.path, fileName);
     final file = File(filePath);
@@ -38,7 +38,7 @@ class _ImagePageState extends State<ImagePage> {
       ),
       body: Center(
         child: FutureBuilder<File?>(
-          future: loadImage(fileName),
+          future: loadFile(fileName),
           builder: (BuildContext context, AsyncSnapshot<File?> snapshot) {
             if (snapshot.connectionState == ConnectionState.waiting) {
               return const CircularProgressIndicator();
@@ -47,7 +47,7 @@ class _ImagePageState extends State<ImagePage> {
             } else if (!snapshot.hasData || snapshot.data == null) {
               return const Text("No such file");
             } else {
-              return Image.file(snapshot.data!);
+              return Text("${snapshot.data!.readAsBytesSync()}");
             }
           },
         ),
