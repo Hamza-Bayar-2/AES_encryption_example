@@ -47,7 +47,7 @@ class _EncryptedFilePageState extends State<EncryptedFilePage> {
             } else if (!snapshot.hasData || snapshot.data == null) {
               return const Text("No such file");
             } else {
-              return Text("${snapshot.data!.readAsBytesSync()}");
+              return SingleChildScrollView(child: Text("${snapshot.data!.readAsBytesSync()}"));
             }
           },
         ),

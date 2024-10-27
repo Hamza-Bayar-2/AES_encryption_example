@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:encrypt/encrypt.dart' as enc;
@@ -15,10 +16,11 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  enc.Key key = enc.Key.fromSecureRandom(32);
+  late enc.Key key;
   enc.IV iv = enc.IV.fromSecureRandom(16);
-  final List<bool> _selectedNumber = [false, false, true];
+  final List<bool> _selectedNumber = [false, false, false];
   final List<Text> numbers = const [Text("128"), Text("192"), Text("256")];
+  late int selectedKeySizeByte;
 
   @override
   Widget build(BuildContext context) {
@@ -61,6 +63,13 @@ class _MyHomePageState extends State<MyHomePage> {
                   for (int i = 0; i < _selectedNumber.length; i++) {
                     _selectedNumber[i] = i == index;
                   }
+                  if(index == 0) {
+                    selectedKeySizeByte = 16;
+                  } else if(index == 1) {
+                    selectedKeySizeByte = 24;
+                  } else if(index == 2) {
+                    selectedKeySizeByte = 32;
+                  }
                 });
               },
               borderRadius: const BorderRadius.all(Radius.circular(8)),
@@ -90,16 +99,20 @@ class _MyHomePageState extends State<MyHomePage> {
           ),
         ],
         onTap: (value) async {
-          print(key.bytes);
           if (value == 0) {
-            Uint8List fileBytes =
-                await loadFileAsBytes("assets/images/Atomium.jpg");
+            setAESKey(selectedKeySizeByte, "hamza bayar");
+            print(key.bytes);
+            Uint8List fileBytes = await loadFileAsBytes(
+              "assets/images/Atomium.jpg",
+            );
             Uint8List encryptedBytes = await encryptFile(fileBytes);
             await saveFile(
               encryptedBytes,
               "encryptedBytes.enc",
             );
           } else if (value == 1) {
+            setAESKey(selectedKeySizeByte, "hamza bayar");
+            print(key.bytes);
             final directory = await getApplicationDocumentsDirectory();
             final filePath = p.join(directory.path, "encryptedBytes.enc");
             final file = File(filePath);
@@ -132,6 +145,25 @@ class _MyHomePageState extends State<MyHomePage> {
       icon: Icon(icon),
       label: Text(text),
     );
+  }
+
+  void setAESKey(int keySizeByte, String keyAsString) {
+    List<int> tempKeyByteList = List<int>.from(utf8.encode(keyAsString));
+
+    tempKeyByteList = paddingTheKey(tempKeyByteList, keySizeByte);
+
+    key = enc.Key(Uint8List.fromList(tempKeyByteList));
+  }
+
+  List<int> paddingTheKey(List<int> tempKeyByteList, int keySizeByte) {
+    if (tempKeyByteList.length < keySizeByte) {
+      int paddingAmount = keySizeByte - tempKeyByteList.length;
+      tempKeyByteList.addAll(List.filled(paddingAmount, 0));
+    } else if (tempKeyByteList.length > keySizeByte) {
+      tempKeyByteList = tempKeyByteList.sublist(0, keySizeByte);
+    }
+
+    return tempKeyByteList;
   }
 
   Future<Uint8List> loadFileAsBytes(String filePath) async {
