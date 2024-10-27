@@ -21,6 +21,7 @@ class _MyHomePageState extends State<MyHomePage> {
   final List<bool> _selectedNumber = [false, false, false];
   final List<Text> numbers = const [Text("128"), Text("192"), Text("256")];
   late int selectedKeySizeByte;
+  final String decryptedAndSavedFileName = "decryptedFoto.jpg";
 
   @override
   Widget build(BuildContext context) {
@@ -44,7 +45,7 @@ class _MyHomePageState extends State<MyHomePage> {
                     context,
                     MaterialPageRoute(
                         builder: (context) =>
-                            const ImagePage(fileName: "decryptedFoto.jpg")),
+                            ImagePage(fileName: decryptedAndSavedFileName)),
                   );
                 }),
                 button(Icons.file_copy, "Show Encrypted file", () {
@@ -56,7 +57,7 @@ class _MyHomePageState extends State<MyHomePage> {
                   );
                 }),
                 button(Icons.delete, "Delete Files", () async {
-                  await deleteFile("decryptedFoto.jpg");
+                  await deleteFile(decryptedAndSavedFileName);
                   await deleteFile("encryptedBytes.enc");
                 }),
                 button(Icons.camera_alt, "Open Camera", () {}),
@@ -132,10 +133,10 @@ class _MyHomePageState extends State<MyHomePage> {
             if(decryptedFoto != null) {
               await saveFile(
                 decryptedFoto,
-                "decryptedFoto.jpg",
+                decryptedAndSavedFileName,
               );
             } else {
-              deleteFile("decryptedFoto.jpg");
+              deleteFile(decryptedAndSavedFileName);
             }
           }
         },
