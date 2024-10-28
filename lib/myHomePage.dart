@@ -5,8 +5,11 @@ import 'package:encrypt/encrypt.dart' as enc;
 import 'package:flutter/services.dart';
 import 'package:lab2_app_2/pages/encrypted_file_page.dart';
 import 'package:lab2_app_2/pages/image_page.dart';
+import 'package:lab2_app_2/pages/qr_scann_page.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as p;
+
+String qrReturn = "";
 
 class MyHomePage extends StatefulWidget {
   const MyHomePage({super.key, required this.title});
@@ -57,10 +60,13 @@ class _MyHomePageState extends State<MyHomePage> {
                   );
                 }),
                 button(Icons.delete, "Delete Files", () async {
+                  setState(() {
+                    key = null;
+                    print(key);
+                  });
                   await deleteFile(decryptedAndSavedFileName);
                   await deleteFile("encryptedBytes.enc");
                 }),
-                button(Icons.camera_alt, "Open Camera", () {}),
                 ToggleButtons(
                   onPressed: (int index) {
                     setState(() {
@@ -91,7 +97,10 @@ class _MyHomePageState extends State<MyHomePage> {
                 ),
               ],
             ),
-            Text("Key: ${key?.bytes}")
+            Padding(
+              padding: const EdgeInsets.only(bottom: 35),
+              child: Text("Key: ${key?.bytes}", style: TextStyle(fontSize: 17),),
+            ),
           ],
         ),
       ),
@@ -108,36 +117,54 @@ class _MyHomePageState extends State<MyHomePage> {
         ],
         onTap: (value) async {
           if (value == 0) {
-            setAESKey(selectedKeySizeByte, "hamza bayar");
-            print(key!.bytes);
-            Uint8List fileBytes = await loadFileAsBytes(
-              "assets/images/Atomium.jpg",
-            );
-            Uint8List? encryptedBytes = await encryptFile(context, fileBytes);
-            if(encryptedBytes != null) {
-              await saveFile(
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                  builder: (context) => const QrScanPage()),
+            ).then((value) async {
+              if(qrReturn == "" || value == "cancel") {
+                return;
+              }
+              setAESKey(selectedKeySizeByte, qrReturn);
+              print(key!.bytes);
+              Uint8List fileBytes = await loadFileAsBytes(
+                "assets/images/Atomium.jpg",
+              );
+              Uint8List? encryptedBytes = await encryptFile(context, fileBytes);
+              if(encryptedBytes != null) {
+                await saveFile(
                 encryptedBytes,
                 "encryptedBytes.enc",
-              );
-            } else {
-              deleteFile("encryptedBytes.enc");
-            }
+                );
+              } else {
+                deleteFile("encryptedBytes.enc");
+              }
+            },);
           } else if (value == 1) {
-            setAESKey(selectedKeySizeByte, "hamza bayar");
-            print(key!.bytes);
-            final directory = await getApplicationDocumentsDirectory();
-            final filePath = p.join(directory.path, "encryptedBytes.enc");
-            final file = File(filePath);
-            Uint8List? decryptedFoto =
-                await decryptFile(context, file.readAsBytesSync(), key!, iv);
-            if(decryptedFoto != null) {
-              await saveFile(
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                  builder: (context) => const QrScanPage()),
+            ).then((value) async {
+              if(qrReturn == "" || value == "cancel") {
+                return;
+              }
+              setAESKey(selectedKeySizeByte, qrReturn);
+              print(key!.bytes);
+              final directory = await getApplicationDocumentsDirectory();
+              final filePath = p.join(directory.path, "encryptedBytes.enc");
+              final file = File(filePath);
+              Uint8List? decryptedFoto =
+                  await decryptFile(context, file.readAsBytesSync(), key!, iv);
+              if(decryptedFoto != null) {
+                await saveFile(
                 decryptedFoto,
                 decryptedAndSavedFileName,
-              );
-            } else {
-              deleteFile(decryptedAndSavedFileName);
-            }
+                );
+              } else {
+                deleteFile(decryptedAndSavedFileName);
+              }
+            },);
           }
         },
       ),
