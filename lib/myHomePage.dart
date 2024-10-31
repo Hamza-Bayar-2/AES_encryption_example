@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:encrypt/encrypt.dart' as enc;
 import 'package:flutter/services.dart';
+import 'package:lab2_app_2/pages/audio_page.dart';
 import 'package:lab2_app_2/pages/encrypted_file_page.dart';
 import 'package:lab2_app_2/pages/image_page.dart';
 import 'package:lab2_app_2/pages/qr_scann_page.dart';
@@ -20,11 +21,14 @@ class MyHomePage extends StatefulWidget {
 
 class _MyHomePageState extends State<MyHomePage> {
   enc.Key? key;
-  enc.IV iv = enc.IV.fromSecureRandom(16);
+  enc.IV? iv;
   final List<bool> _selectedNumber = [false, false, false];
   final List<Text> numbers = const [Text("128"), Text("192"), Text("256")];
+  final List<bool> _selectedType = [true, false];
+  final List<Text> types = const [Text("image"), Text("audio")];
   late int selectedKeySizeByte;
-  final String decryptedAndSavedFileName = "decryptedFoto.jpg";
+  String decryptedAndSavedFileName = "decryptedFoto.jpg";
+  String fileToLoad = "assets/images/Atomium.jpg";
 
   @override
   Widget build(BuildContext context) {
@@ -43,15 +47,16 @@ class _MyHomePageState extends State<MyHomePage> {
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.max,
               children: [
-                button(Icons.image, "Show Decrypted Image", () async {
+                button(Icons.image, "Show Decrypted File", () async {
                   Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                        builder: (context) =>
-                            ImagePage(fileName: decryptedAndSavedFileName)),
-                  );
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => _selectedType.first == true
+                            ? ImagePage(fileName: decryptedAndSavedFileName)
+                            : AudioPage(fileName: decryptedAndSavedFileName),
+                      ));
                 }),
-                button(Icons.file_copy, "Show Encrypted file", () {
+                button(Icons.file_copy, "Show Encrypted File", () {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
@@ -62,7 +67,7 @@ class _MyHomePageState extends State<MyHomePage> {
                 button(Icons.delete, "Delete Files", () async {
                   setState(() {
                     key = null;
-                    print(key);
+                    iv = null;
                   });
                   await deleteFile(decryptedAndSavedFileName);
                   await deleteFile("encryptedBytes.enc");
@@ -70,7 +75,6 @@ class _MyHomePageState extends State<MyHomePage> {
                 ToggleButtons(
                   onPressed: (int index) {
                     setState(() {
-                      // The button that is tapped is set to true, and the others to false.
                       for (int i = 0; i < _selectedNumber.length; i++) {
                         _selectedNumber[i] = i == index;
                       }
@@ -95,11 +99,55 @@ class _MyHomePageState extends State<MyHomePage> {
                   isSelected: _selectedNumber,
                   children: numbers,
                 ),
+                ToggleButtons(
+                  onPressed: (int index) {
+                    setState(() {
+                      for (int i = 0; i < _selectedType.length; i++) {
+                        _selectedType[i] = i == index;
+                      }
+                      if (index == 0) {
+                        decryptedAndSavedFileName = "decryptedFoto.jpg";
+                        fileToLoad = "assets/images/Atomium.jpg";
+                      } else {
+                        decryptedAndSavedFileName = "decryptedFile.mp3";
+                        fileToLoad = "assets/audios/wind_chimes.mp3";
+                      }
+                      print(decryptedAndSavedFileName);
+                      print(fileToLoad);
+                    });
+                  },
+                  borderRadius: const BorderRadius.all(Radius.circular(8)),
+                  selectedBorderColor: Colors.deepPurple,
+                  selectedColor: Colors.white,
+                  fillColor: Colors.deepPurple,
+                  color: Colors.deepPurple,
+                  constraints: const BoxConstraints(
+                    minHeight: 40.0,
+                    minWidth: 80.0,
+                  ),
+                  isSelected: _selectedType,
+                  children: types,
+                ),
               ],
             ),
             Padding(
               padding: const EdgeInsets.only(bottom: 35),
-              child: Text("Key: ${key?.bytes}", style: TextStyle(fontSize: 17),),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    "Key: ${key?.bytes}",
+                    style: const TextStyle(fontSize: 17),
+                  ),
+                  const SizedBox(
+                    height: 10,
+                  ),
+                  Text(
+                    "IV: ${iv?.bytes}",
+                    style: const TextStyle(fontSize: 17),
+                  ),
+                ],
+              ),
             ),
           ],
         ),
@@ -112,59 +160,63 @@ class _MyHomePageState extends State<MyHomePage> {
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.lock_open_rounded),
-            label: "un luck",
+            label: "un lock",
           ),
         ],
         onTap: (value) async {
           if (value == 0) {
             Navigator.push(
               context,
-              MaterialPageRoute(
-                  builder: (context) => const QrScanPage()),
-            ).then((value) async {
-              if(qrReturn == "" || value == "cancel") {
-                return;
-              }
-              setAESKey(selectedKeySizeByte, qrReturn);
-              print(key!.bytes);
-              Uint8List fileBytes = await loadFileAsBytes(
-                "assets/images/Atomium.jpg",
-              );
-              Uint8List? encryptedBytes = await encryptFile(context, fileBytes);
-              if(encryptedBytes != null) {
-                await saveFile(
-                encryptedBytes,
-                "encryptedBytes.enc",
+              MaterialPageRoute(builder: (context) => const QrScanPage()),
+            ).then(
+              (value) async {
+                if (qrReturn == "" || value == "cancel") {
+                  return;
+                }
+                iv = enc.IV.fromSecureRandom(16);
+                setAESKey(selectedKeySizeByte, qrReturn);
+                print(key!.bytes);
+                Uint8List fileBytes = await loadFileAsBytes(
+                  fileToLoad,
                 );
-              } else {
-                deleteFile("encryptedBytes.enc");
-              }
-            },);
+                Uint8List? encryptedBytes =
+                    await encryptFile(context, fileBytes);
+                if (encryptedBytes != null) {
+                  await saveFile(
+                    encryptedBytes,
+                    "encryptedBytes.enc",
+                  );
+                } else {
+                  deleteFile("encryptedBytes.enc");
+                }
+              },
+            );
           } else if (value == 1) {
             Navigator.push(
               context,
-              MaterialPageRoute(
-                  builder: (context) => const QrScanPage()),
-            ).then((value) async {
-              if(qrReturn == "" || value == "cancel") {
-                return;
-              }
-              setAESKey(selectedKeySizeByte, qrReturn);
-              print(key!.bytes);
-              final directory = await getApplicationDocumentsDirectory();
-              final filePath = p.join(directory.path, "encryptedBytes.enc");
-              final file = File(filePath);
-              Uint8List? decryptedFoto =
-                  await decryptFile(context, file.readAsBytesSync(), key!, iv);
-              if(decryptedFoto != null) {
-                await saveFile(
-                decryptedFoto,
-                decryptedAndSavedFileName,
-                );
-              } else {
-                deleteFile(decryptedAndSavedFileName);
-              }
-            },);
+              MaterialPageRoute(builder: (context) => const QrScanPage()),
+            ).then(
+              (value) async {
+                if (qrReturn == "" || value == "cancel") {
+                  return;
+                }
+                setAESKey(selectedKeySizeByte, qrReturn);
+                print(key!.bytes);
+                final directory = await getApplicationDocumentsDirectory();
+                final filePath = p.join(directory.path, "encryptedBytes.enc");
+                final file = File(filePath);
+                Uint8List? decryptedFoto = await decryptFile(
+                    context, file.readAsBytesSync(), key!, iv!);
+                if (decryptedFoto != null) {
+                  await saveFile(
+                    decryptedFoto,
+                    decryptedAndSavedFileName,
+                  );
+                } else {
+                  deleteFile(decryptedAndSavedFileName);
+                }
+              },
+            );
           }
         },
       ),
@@ -216,7 +268,8 @@ class _MyHomePageState extends State<MyHomePage> {
     return data.buffer.asUint8List();
   }
 
-  Future<Uint8List?> encryptFile(BuildContext context, Uint8List fileBytes) async {
+  Future<Uint8List?> encryptFile(
+      BuildContext context, Uint8List fileBytes) async {
     final encrypter = enc.Encrypter(enc.AES(key!));
 
     try {
@@ -226,9 +279,10 @@ class _MyHomePageState extends State<MyHomePage> {
           padding: const EdgeInsets.all(10),
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(5)),
           backgroundColor: Colors.green,
-          content: const Text('Encryption completed', style: TextStyle(
-              fontSize: 17
-          ),),
+          content: const Text(
+            'Encryption completed',
+            style: TextStyle(fontSize: 17),
+          ),
           duration: const Duration(seconds: 1),
         ),
       );
@@ -239,9 +293,10 @@ class _MyHomePageState extends State<MyHomePage> {
           padding: const EdgeInsets.all(10),
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(5)),
           backgroundColor: Colors.redAccent,
-          content: const Text('An error occurred during the encryption process', style: TextStyle(
-              fontSize: 17
-          ),),
+          content: const Text(
+            'An error occurred during the encryption process',
+            style: TextStyle(fontSize: 17),
+          ),
           duration: const Duration(seconds: 5),
         ),
       );
@@ -254,15 +309,17 @@ class _MyHomePageState extends State<MyHomePage> {
     final encrypter = enc.Encrypter(enc.AES(key));
 
     try {
-      final decrypted = encrypter.decryptBytes(enc.Encrypted(encryptedBytes), iv: iv);
+      final decrypted =
+          encrypter.decryptBytes(enc.Encrypted(encryptedBytes), iv: iv);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           padding: const EdgeInsets.all(10),
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(5)),
           backgroundColor: Colors.green,
-          content: const Text('Decryption completed', style: TextStyle(
-              fontSize: 17
-          ),),
+          content: const Text(
+            'Decryption completed',
+            style: TextStyle(fontSize: 17),
+          ),
           duration: const Duration(seconds: 1),
         ),
       );
@@ -273,9 +330,10 @@ class _MyHomePageState extends State<MyHomePage> {
           padding: const EdgeInsets.all(10),
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(5)),
           backgroundColor: Colors.redAccent,
-          content: const Text('An error occurred during the decryption process.', style: TextStyle(
-            fontSize: 17
-          ),),
+          content: const Text(
+            'An error occurred during the decryption process.',
+            style: TextStyle(fontSize: 17),
+          ),
           duration: const Duration(seconds: 5),
         ),
       );
@@ -297,7 +355,9 @@ class _MyHomePageState extends State<MyHomePage> {
     final filePath = p.join(directory.path, fileName);
     final file = File(filePath);
 
-    await file.delete();
+    if (file.existsSync()) {
+      await file.delete();
+    }
     print('File deleted at: $filePath');
   }
 }

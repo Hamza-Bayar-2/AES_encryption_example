@@ -28,28 +28,38 @@ class _QrScanPageState extends State<QrScanPage> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('QR Kod Tarayıcı'),
-        leading: IconButton(onPressed: () {
-          Navigator.pop(context, "cancel");
-        }, icon: Icon(Icons.arrow_back)),
+        leading: IconButton(
+            onPressed: () {
+              Navigator.pop(context, "cancel");
+            },
+            icon: const Icon(Icons.arrow_back)),
       ),
       body: Column(
         children: <Widget>[
-          /*Expanded(
+          Expanded(
             flex: 5,
             child: QRView(
               key: qrKey,
               onQRViewCreated: _onQRViewCreated,
             ),
-          ),*/
-          ElevatedButton(onPressed: () {
-            _returnTemp();
-          }, child: Text("bas")),
+          ),
+          ElevatedButton(
+              onPressed: () {
+                setState(() {
+                  if(result != null) {
+                    qrReturn = result!.code.toString();
+                    Navigator.pop(context);
+                  }
+                  // qrReturn = "selam";
+                  // Navigator.pop(context);
+                });
+              },
+              child: const Text("Create Key, and Process")),
           Expanded(
             flex: 1,
             child: Center(
               child: (result != null)
-                  ? Text(
-                  'Veri: ${result!.code}')
+                  ? Text('Veri: ${result!.code}')
                   : const Text('Bir kod taratın'),
             ),
           ),
@@ -63,17 +73,8 @@ class _QrScanPageState extends State<QrScanPage> {
     controller.scannedDataStream.listen((scanData) {
       setState(() {
         result = scanData;
-        qrReturn = result!.code.toString();
       });
     });
-  }
-
-  void _returnTemp() {
-      setState(() {
-        qrReturn = "abuzer";
-        Navigator.pop(context);
-      });
-
   }
 
   @override
