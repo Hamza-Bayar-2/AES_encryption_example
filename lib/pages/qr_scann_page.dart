@@ -27,7 +27,7 @@ class _QrScanPageState extends State<QrScanPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('QR Kod Tarayıcı'),
+        title: const Text('QR Scanner'),
         leading: IconButton(
             onPressed: () {
               Navigator.pop(context, "cancel");
@@ -59,8 +59,8 @@ class _QrScanPageState extends State<QrScanPage> {
             flex: 1,
             child: Center(
               child: (result != null)
-                  ? Text('Veri: ${result!.code}')
-                  : const Text('Bir kod taratın'),
+                  ? Text('Scanned data: ${result!.code}')
+                  : const Text('Scan a QR code '),
             ),
           ),
         ],

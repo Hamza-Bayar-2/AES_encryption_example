@@ -26,7 +26,7 @@ class _MyHomePageState extends State<MyHomePage> {
   final List<Text> numbers = const [Text("128"), Text("192"), Text("256")];
   final List<bool> _selectedType = [true, false];
   final List<Text> types = const [Text("image"), Text("audio")];
-  late int selectedKeySizeByte;
+  int? selectedKeySizeByte;
   String decryptedAndSavedFileName = "decryptedFoto.jpg";
   String fileToLoad = "assets/images/Atomium.jpg";
 
@@ -47,7 +47,7 @@ class _MyHomePageState extends State<MyHomePage> {
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.max,
               children: [
-                button(Icons.image, "Show Decrypted File", () async {
+                button(_selectedType.first == true ? Icons.image : Icons.audio_file, "Show Decrypted File", () async {
                   Navigator.push(
                       context,
                       MaterialPageRoute(
@@ -100,7 +100,7 @@ class _MyHomePageState extends State<MyHomePage> {
                   children: numbers,
                 ),
                 ToggleButtons(
-                  onPressed: (int index) {
+                  onPressed: (int index) async {
                     setState(() {
                       for (int i = 0; i < _selectedType.length; i++) {
                         _selectedType[i] = i == index;
@@ -112,9 +112,12 @@ class _MyHomePageState extends State<MyHomePage> {
                         decryptedAndSavedFileName = "decryptedFile.mp3";
                         fileToLoad = "assets/audios/wind_chimes.mp3";
                       }
-                      print(decryptedAndSavedFileName);
-                      print(fileToLoad);
+
+                      key = null;
+                      iv = null;
                     });
+                    await deleteFile(decryptedAndSavedFileName);
+                    await deleteFile("encryptedBytes.enc");
                   },
                   borderRadius: const BorderRadius.all(Radius.circular(8)),
                   selectedBorderColor: Colors.deepPurple,
@@ -165,6 +168,11 @@ class _MyHomePageState extends State<MyHomePage> {
         ],
         onTap: (value) async {
           if (value == 0) {
+            if(selectedKeySizeByte == null) {
+              showSnackBar(context, message: 'Please select key size', backgroundColor: Colors.redAccent);
+              return;
+            }
+
             Navigator.push(
               context,
               MaterialPageRoute(builder: (context) => const QrScanPage()),
@@ -174,8 +182,7 @@ class _MyHomePageState extends State<MyHomePage> {
                   return;
                 }
                 iv = enc.IV.fromSecureRandom(16);
-                setAESKey(selectedKeySizeByte, qrReturn);
-                print(key!.bytes);
+                setAESKey(selectedKeySizeByte!, qrReturn);
                 Uint8List fileBytes = await loadFileAsBytes(
                   fileToLoad,
                 );
@@ -192,6 +199,14 @@ class _MyHomePageState extends State<MyHomePage> {
               },
             );
           } else if (value == 1) {
+            if(selectedKeySizeByte == null) {
+              showSnackBar(context, message: 'Please select key size', backgroundColor: Colors.redAccent);
+              return;
+            }else if (key == null) {
+              showSnackBar(context, message: 'There is no file to encrypt', backgroundColor: Colors.redAccent);
+              return;
+            }
+
             Navigator.push(
               context,
               MaterialPageRoute(builder: (context) => const QrScanPage()),
@@ -200,8 +215,7 @@ class _MyHomePageState extends State<MyHomePage> {
                 if (qrReturn == "" || value == "cancel") {
                   return;
                 }
-                setAESKey(selectedKeySizeByte, qrReturn);
-                print(key!.bytes);
+                setAESKey(selectedKeySizeByte!, qrReturn);
                 final directory = await getApplicationDocumentsDirectory();
                 final filePath = p.join(directory.path, "encryptedBytes.enc");
                 final file = File(filePath);
@@ -268,75 +282,29 @@ class _MyHomePageState extends State<MyHomePage> {
     return data.buffer.asUint8List();
   }
 
-  Future<Uint8List?> encryptFile(
-      BuildContext context, Uint8List fileBytes) async {
+  Future<Uint8List?> encryptFile(BuildContext context, Uint8List fileBytes) async {
     final encrypter = enc.Encrypter(enc.AES(key!));
 
     try {
       final encrypted = encrypter.encryptBytes(fileBytes, iv: iv);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          padding: const EdgeInsets.all(10),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(5)),
-          backgroundColor: Colors.green,
-          content: const Text(
-            'Encryption completed',
-            style: TextStyle(fontSize: 17),
-          ),
-          duration: const Duration(seconds: 1),
-        ),
-      );
+      showSnackBar(context, message: 'Encryption completed', backgroundColor: Colors.green);
       return encrypted.bytes;
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          padding: const EdgeInsets.all(10),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(5)),
-          backgroundColor: Colors.redAccent,
-          content: const Text(
-            'An error occurred during the encryption process',
-            style: TextStyle(fontSize: 17),
-          ),
-          duration: const Duration(seconds: 5),
-        ),
-      );
+      showSnackBar(context, message: 'An error occurred during the encryption process', backgroundColor: Colors.redAccent);
       return null;
     }
   }
 
-  Future<Uint8List?> decryptFile(BuildContext context, Uint8List encryptedBytes,
-      enc.Key key, enc.IV iv) async {
+  Future<Uint8List?> decryptFile(BuildContext context, Uint8List encryptedBytes, enc.Key key, enc.IV iv) async {
     final encrypter = enc.Encrypter(enc.AES(key));
 
     try {
       final decrypted =
           encrypter.decryptBytes(enc.Encrypted(encryptedBytes), iv: iv);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          padding: const EdgeInsets.all(10),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(5)),
-          backgroundColor: Colors.green,
-          content: const Text(
-            'Decryption completed',
-            style: TextStyle(fontSize: 17),
-          ),
-          duration: const Duration(seconds: 1),
-        ),
-      );
+      showSnackBar(context, message: 'Decryption completed', backgroundColor: Colors.green);
       return Uint8List.fromList(decrypted);
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          padding: const EdgeInsets.all(10),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(5)),
-          backgroundColor: Colors.redAccent,
-          content: const Text(
-            'An error occurred during the decryption process.',
-            style: TextStyle(fontSize: 17),
-          ),
-          duration: const Duration(seconds: 5),
-        ),
-      );
+      showSnackBar(context, message: 'An error occurred during the decryption process', backgroundColor: Colors.redAccent);
       return null;
     }
   }
@@ -347,7 +315,6 @@ class _MyHomePageState extends State<MyHomePage> {
     final file = File(filePath);
 
     await file.writeAsBytes(fileAsBytes);
-    print('File saved: $filePath');
   }
 
   Future<void> deleteFile(String fileName) async {
@@ -358,6 +325,26 @@ class _MyHomePageState extends State<MyHomePage> {
     if (file.existsSync()) {
       await file.delete();
     }
-    print('File deleted at: $filePath');
   }
+
+  void showSnackBar(BuildContext context, {required String message, required Color backgroundColor}) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        padding: const EdgeInsets.all(10),
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.only(
+            topRight: Radius.circular(5),
+            topLeft: Radius.circular(5),
+          ),
+        ),
+        backgroundColor: backgroundColor,
+        content: Text(
+          message,
+          style: const TextStyle(fontSize: 17),
+        ),
+        duration: const Duration(milliseconds: 1500),
+      ),
+    );
+  }
+
 }
